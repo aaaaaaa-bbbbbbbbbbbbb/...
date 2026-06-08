@@ -20,8 +20,8 @@ declare namespace Cloudflare {
 		CONFIG_TASK: Workflow;
 		SCALE_TASK: Workflow;
 
-		API_KEY: string;
-		HEARTBEAT_HMAC_KEY: string;
+		API_KEY?: string;
+		HEARTBEAT_HMAC_KEY?: string;
 		REPORTER_ENDPOINT: string;
 		HEARTBEAT_TIMEOUT_MS: string;
 		RECONCILE_INTERVAL_MS: string;
