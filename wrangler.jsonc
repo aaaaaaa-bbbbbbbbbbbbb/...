@@ -34,7 +34,7 @@
 			"rollout_active_grace_period": 900,
 			"constraints": {
 				"regions": [
-					"__REGION__"
+					"APAC"
 				]
 			}
 		}
