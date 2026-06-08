@@ -68,9 +68,10 @@ async function applySchema(env: Env): Promise<void> {
 		log(env, "warn", "ensureSchema: DB binding unavailable, skipping");
 		return;
 	}
+	const db = env.DB;
 
 	try{
-		const row = await env.DB
+		const row = await db
 			.prepare(`SELECT value FROM _schema_meta WHERE key = 'version'`)
 			.first<{ value: number }>();
 		if(row && row.value >= SCHEMA_VERSION) return;
@@ -79,9 +80,9 @@ async function applySchema(env: Env): Promise<void> {
 	}
 
 	const start = Date.now();
-	const statements = DDL_STATEMENTS.map((sql) => env.DB.prepare(sql));
+	const statements = DDL_STATEMENTS.map((sql) => db.prepare(sql));
 	statements.push(
-		env.DB
+		db
 			.prepare(
 				`INSERT INTO _schema_meta (key, value) VALUES ('version', ?)
 				 ON CONFLICT(key) DO UPDATE SET value = excluded.value`
@@ -89,7 +90,7 @@ async function applySchema(env: Env): Promise<void> {
 			.bind(SCHEMA_VERSION)
 	);
 
-	await env.DB.batch(statements);
+	await db.batch(statements);
 
 	log(env, "info", "schema applied", {
 		version: SCHEMA_VERSION,

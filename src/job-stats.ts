@@ -3,7 +3,13 @@ import type { FleetCommand, InstanceStats, FleetReport } from "./types";
 type D1Like = D1Database | D1DatabaseSession;
 
 function db(env: Env, override?: D1Like): D1Like {
-	return override ?? env.DB;
+	const d = override ?? env.DB;
+	if(!d) throw new Error("DB binding unavailable");
+	return d;
+}
+
+function hasDb(env: Env, override?: D1Like): boolean {
+	return !!(override ?? env.DB);
 }
 
 export async function recordInstanceRegistry(
@@ -14,6 +20,7 @@ export async function recordInstanceRegistry(
 	now: number,
 	session?: D1Like
 ): Promise<void> {
+	if(!hasDb(env, session)) return;
 	await db(env, session)
 		.prepare(
 			`INSERT INTO instance_registry (instance_id, status, created_at, updated_at, colo, current_pool)
@@ -31,6 +38,7 @@ export async function upsertInstanceAggregates(
 	stats: Partial<InstanceStats> & { instanceId: string; updatedAt: number },
 	session?: D1Like
 ): Promise<void> {
+	if(!hasDb(env, session)) return;
 	await db(env, session)
 		.prepare(
 			`INSERT INTO instance_aggregates (instance_id, status, last_hashrate, shares_lifetime, shares_rejected, updated_at, colo, current_pool, restart_count)
@@ -60,6 +68,7 @@ export async function upsertInstanceAggregates(
 }
 
 export async function writeFleetReport(env: Env, report: FleetReport, session?: D1Like): Promise<void> {
+	if(!hasDb(env, session)) return;
 	await db(env, session)
 		.prepare(
 			`INSERT INTO fleet_reports (timestamp, target_instances, active_instances, total_hashrate, total_shares, avg_hashrate, peak_hashrate, rejection_rate, config_json)
@@ -80,6 +89,7 @@ export async function writeFleetReport(env: Env, report: FleetReport, session?: 
 }
 
 export async function pruneStaleAggregates(env: Env, maxAgeMs: number, session?: D1Like): Promise<void> {
+	if(!hasDb(env, session)) return;
 	const cutoff = Date.now() - maxAgeMs;
 	const d = db(env, session);
 	await d.prepare(`DELETE FROM instance_aggregates WHERE updated_at < ?`).bind(cutoff).run();
@@ -87,6 +97,7 @@ export async function pruneStaleAggregates(env: Env, maxAgeMs: number, session?:
 }
 
 export async function pruneFleetReports(env: Env, retainMs: number, session?: D1Like): Promise<void> {
+	if(!hasDb(env, session)) return;
 	const cutoff = Date.now() - retainMs;
 	await db(env, session)
 		.prepare(`DELETE FROM fleet_reports WHERE timestamp < ?`)
@@ -95,6 +106,7 @@ export async function pruneFleetReports(env: Env, retainMs: number, session?: D1
 }
 
 export async function pruneErroredRegistry(env: Env, maxAgeMs: number, session?: D1Like): Promise<void> {
+	if(!hasDb(env, session)) return;
 	const cutoff = Date.now() - maxAgeMs;
 	await db(env, session)
 		.prepare(`DELETE FROM instance_registry WHERE updated_at < ? AND status IN ('error', 'stopped')`)
@@ -103,6 +115,7 @@ export async function pruneErroredRegistry(env: Env, maxAgeMs: number, session?:
 }
 
 export async function pruneStaleStarting(env: Env, maxAgeMs: number, session?: D1Like): Promise<void> {
+	if(!hasDb(env, session)) return;
 
 	const cutoff = Date.now() - maxAgeMs;
 	await db(env, session)
@@ -121,6 +134,7 @@ export interface FleetStatusRow {
 }
 
 export async function getFleetStatus(env: Env, session?: D1Like): Promise<FleetStatusRow> {
+	if(!hasDb(env, session)) return { total: 0, running: 0, starting: 0, error: 0, totalHashrate: 0, avgHashrate: 0 };
 	const d = db(env, session);
 
 	const totals = await d.prepare(`SELECT COUNT(*) as total FROM instance_registry`).first<{ total: number }>();
@@ -155,6 +169,7 @@ export async function getAliveInstanceCount(
 	session?: D1Like,
 	aliveWindowMs: number = 300000
 ): Promise<number> {
+	if(!hasDb(env, session)) return 0;
 
 	const now = Date.now();
 	const cutoff = now - aliveWindowMs;
@@ -178,6 +193,7 @@ export async function getAliveInstanceIds(
 	session?: D1Like,
 	aliveWindowMs: number = 300000
 ): Promise<Set<string>> {
+	if(!hasDb(env, session)) return new Set();
 
 	const cutoff = Date.now() - aliveWindowMs;
 	const res = await db(env, session)
@@ -194,6 +210,7 @@ export async function getAliveInstanceIds(
 }
 
 export async function getTotalHashrate(env: Env, session?: D1Like): Promise<number> {
+	if(!hasDb(env, session)) return 0;
 	const row = await db(env, session)
 		.prepare(`SELECT COALESCE(SUM(last_hashrate),0) as total FROM instance_aggregates WHERE status = 'running'`)
 		.first<{ total: number }>();
@@ -201,6 +218,7 @@ export async function getTotalHashrate(env: Env, session?: D1Like): Promise<numb
 }
 
 export async function getTotalShares(env: Env, session?: D1Like): Promise<{ accepted: number; rejected: number }> {
+	if(!hasDb(env, session)) return { accepted: 0, rejected: 0 };
 	const row = await db(env, session)
 		.prepare(
 			`SELECT COALESCE(SUM(shares_lifetime),0) as accepted, COALESCE(SUM(shares_rejected),0) as rejected
@@ -217,6 +235,7 @@ export async function getRejectionRate(env: Env, session?: D1Like): Promise<numb
 }
 
 export async function getPeakHashrate24h(env: Env, session?: D1Like): Promise<number> {
+	if(!hasDb(env, session)) return 0;
 	const since = Date.now() - 24 * 60 * 60 * 1000;
 	const row = await db(env, session)
 		.prepare(`SELECT MAX(total_hashrate) as peak FROM fleet_reports WHERE timestamp >= ?`)
@@ -227,6 +246,7 @@ export async function getPeakHashrate24h(env: Env, session?: D1Like): Promise<nu
 }
 
 export async function listActiveInstanceIds(env: Env, session?: D1Like): Promise<string[]> {
+	if(!hasDb(env, session)) return [];
 	const res = await db(env, session)
 		.prepare(`SELECT instance_id FROM instance_aggregates WHERE status = 'running' ORDER BY instance_id`)
 		.all<{ instance_id: string }>();
@@ -235,6 +255,7 @@ export async function listActiveInstanceIds(env: Env, session?: D1Like): Promise
 
 export async function getInstanceFailureRate(env: Env, instanceIds: string[], session?: D1Like): Promise<number> {
 	if(instanceIds.length === 0) return 0;
+	if(!hasDb(env, session)) return 0;
 	const placeholders = instanceIds.map(() => "?").join(",");
 	const row = await db(env, session)
 		.prepare(

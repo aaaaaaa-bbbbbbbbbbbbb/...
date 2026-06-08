@@ -27,8 +27,8 @@ export class ConfigWorkflow extends WorkflowEntrypoint<Env, PoolMigrationParams>
 
 		const rollbackPool = await step.do("snapshot-config", async () => {
 			const cfg = await getConfig(this.env);
-			await this.env.KV.put("migration:rollback_pool", cfg.pool);
-			await this.env.KV.put("migration:target_pool", params.newPool);
+			await this.env.KV?.put("migration:rollback_pool", cfg.pool);
+			await this.env.KV?.put("migration:target_pool", params.newPool);
 			return cfg.pool;
 		});
 
@@ -64,7 +64,7 @@ export class ConfigWorkflow extends WorkflowEntrypoint<Env, PoolMigrationParams>
 				);
 			});
 			await step.do("emit-rollback", async () => {
-				await this.env.KV.delete("migration:target_pool");
+				await this.env.KV?.delete("migration:target_pool");
 				writeEvent(this.env, "workflow", "pool_migration_rolled_back", {
 					newPool: params.newPool,
 					rollbackPool,
@@ -97,8 +97,8 @@ export class ConfigWorkflow extends WorkflowEntrypoint<Env, PoolMigrationParams>
 		}
 
 		await step.do("emit-complete", async () => {
-			await this.env.KV.put("migration:active_pool", params.newPool);
-			await this.env.KV.delete("migration:target_pool");
+			await this.env.KV?.put("migration:active_pool", params.newPool);
+			await this.env.KV?.delete("migration:target_pool");
 			writeEvent(this.env, "workflow", "pool_migration_complete", {
 				newPool: params.newPool,
 				migrated: allInstances.length,

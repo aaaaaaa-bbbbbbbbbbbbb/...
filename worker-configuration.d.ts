@@ -3,8 +3,8 @@ declare namespace Cloudflare {
 
 		JOB_CONTAINER: DurableObjectNamespace<import("./src/index").AppNode>;
 
-		DB: D1Database;
-		KV: KVNamespace;
+		DB?: D1Database;
+		KV?: KVNamespace;
 
 		HEARTBEAT_QUEUE?: Queue<import("./src/types").HeartbeatMessage>;
 		COMMAND_QUEUE?: Queue<import("./src/types").FleetCommand>;

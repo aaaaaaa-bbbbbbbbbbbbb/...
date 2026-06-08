@@ -46,6 +46,7 @@ app.get("/status", async (c) => {
 
 app.post("/command/restart", async (c) => {
 	if(!auth(c)) return c.json({ error: "unauthorized" }, 401);
+	if(!c.env.DB) return c.json({ reports: [] });
 	try{
 		const { instanceId, reason } = await c.req.json<{ instanceId?: string; reason?: string }>();
 		if(!instanceId) return c.json({ error: "instanceId required" }, 400);
@@ -58,6 +59,7 @@ app.post("/command/restart", async (c) => {
 
 app.post("/command/drain", async (c) => {
 	if(!auth(c)) return c.json({ error: "unauthorized" }, 401);
+	if(!c.env.DB) return c.json({ instances: [], count: 0 });
 	try{
 		await writeFleetCommand(c.env, { type: "destroy", reason: "drain" });
 		return c.json({ status: "drain queued" });
@@ -140,8 +142,10 @@ app.get("/workflows/:name/:id", async (c) => {
 
 app.get("/admin/reports", async (c) => {
 	if(!auth(c)) return c.json({ error: "unauthorized" }, 401);
+	if(!c.env.DB) return c.json({ reports: [] });
+	const db = c.env.DB;
 	try{
-		const rows = await c.env.DB.prepare(
+		const rows = await db.prepare(
 			`SELECT * FROM fleet_reports ORDER BY timestamp DESC LIMIT 60`
 		).all();
 		return c.json({ reports: rows.results });
@@ -152,8 +156,10 @@ app.get("/admin/reports", async (c) => {
 
 app.get("/admin/instances", async (c) => {
 	if(!auth(c)) return c.json({ error: "unauthorized" }, 401);
+	if(!c.env.DB) return c.json({ instances: [], count: 0 });
+	const db = c.env.DB;
 	try{
-		const rows = await c.env.DB.prepare(
+		const rows = await db.prepare(
 			`SELECT instance_id, status, last_hashrate, colo, current_pool, updated_at
 			 FROM instance_aggregates
 			 WHERE status IN ('running','starting')

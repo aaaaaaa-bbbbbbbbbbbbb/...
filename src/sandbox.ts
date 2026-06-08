@@ -182,14 +182,16 @@ export class AppNode extends Container<Env> {
 		const targetMode = overrideMode || config.randomxMode;
 		const targetThreads = overrideThreads || config.threads;
 
-		await this.env.DB.prepare(
-			`INSERT INTO instance_registry (instance_id, status, created_at, updated_at, colo, current_pool)
-			 VALUES (?, 'starting', ?, ?, ?, ?)
-			 ON CONFLICT(instance_id) DO UPDATE SET
-				 status='starting', updated_at=?, colo=?, current_pool=?`
-		)
-			.bind(name, Date.now(), Date.now(), regionHint || "", targetPool, Date.now(), regionHint || "", targetPool)
-			.run();
+		if(this.env.DB){
+			await this.env.DB.prepare(
+				`INSERT INTO instance_registry (instance_id, status, created_at, updated_at, colo, current_pool)
+				 VALUES (?, 'starting', ?, ?, ?, ?)
+				 ON CONFLICT(instance_id) DO UPDATE SET
+					 status='starting', updated_at=?, colo=?, current_pool=?`
+			)
+				.bind(name, Date.now(), Date.now(), regionHint || "", targetPool, Date.now(), regionHint || "", targetPool)
+				.run();
+		}
 
 		this.envVars = {
 			EDGE_ALGORITHM: STATIC_JOB.algorithm,
@@ -238,9 +240,11 @@ export class AppNode extends Container<Env> {
 				if(attempt < MAX_RETRIES){
 					await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
 				}else{
-					await this.env.DB.prepare(
-						`UPDATE instance_registry SET status='error', last_error=?, updated_at=? WHERE instance_id=?`
-					).bind(String(e), Date.now(), name).run();
+					if(this.env.DB){
+						await this.env.DB.prepare(
+							`UPDATE instance_registry SET status='error', last_error=?, updated_at=? WHERE instance_id=?`
+						).bind(String(e), Date.now(), name).run();
+					}
 					throw e;
 				}
 			}
@@ -343,9 +347,11 @@ export class AppNode extends Container<Env> {
 				})
 			);
 			if(res.status >= 200 && res.status < 300){
-				await this.env.DB.prepare(
-					`UPDATE instance_registry SET status='running', updated_at=? WHERE instance_id=?`
-				).bind(Date.now(), this.instanceName).run();
+				if(this.env.DB){
+					await this.env.DB.prepare(
+						`UPDATE instance_registry SET status='running', updated_at=? WHERE instance_id=?`
+					).bind(Date.now(), this.instanceName).run();
+				}
 			}else{
 				log(this.env, "warn", "probe returned non-2xx", { name: this.instanceName, status: res.status });
 			}

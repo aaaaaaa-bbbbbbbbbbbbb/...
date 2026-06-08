@@ -17,7 +17,7 @@ import type { FleetCommand } from "./types";
 
 export async function runCron(env: Env): Promise<void> {
 	const now = Date.now();
-	const session = env.DB.withSession();
+	const session = env.DB?.withSession();
 
 	const config = await getConfig(env);
 
