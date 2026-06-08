@@ -5,8 +5,8 @@
   "private": true,
   "scripts": {
 	"setup": "node scripts/setup.mjs",
-	"deploy": "wrangler deploy",
-	"deploy:worker": "wrangler deploy",
+	"deploy": "node scripts/setup.mjs && wrangler deploy",
+	"deploy:worker": "node scripts/setup.mjs && wrangler deploy",
 	"dev": "wrangler dev",
 	"start": "wrangler dev",
 	"cf-typegen": "wrangler types",
