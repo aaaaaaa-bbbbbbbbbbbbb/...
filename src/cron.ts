@@ -11,6 +11,7 @@ import{
 	getTotalShares,
 	getRejectionRate,
 	getPeakHashrate24h,
+	writeFleetCommand,
 } from "./job-stats";
 import type { FleetCommand } from "./types";
 
@@ -71,7 +72,7 @@ export async function runCron(env: Env): Promise<void> {
 
 		const batchSize = Math.min(needed, config.fillBatch);
 		try{
-			await env.COMMAND_QUEUE.send({
+			await writeFleetCommand(env, {
 				type: "spawn",
 				desiredCount: batchSize,
 			} as FleetCommand);

@@ -1,5 +1,5 @@
 import{ WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
-import{ listActiveInstanceIds, getInstanceFailureRate } from "../job-stats";
+import{ listActiveInstanceIds, getInstanceFailureRate, writeFleetCommand } from "../job-stats";
 import{ writeEvent, log } from "../metrics";
 import{ getConfig } from "../config";
 import type { PoolMigrationParams, FleetCommand } from "../types";
@@ -43,9 +43,7 @@ export class ConfigWorkflow extends WorkflowEntrypoint<Env, PoolMigrationParams>
 
 		await step.do("reconfigure-canary", { retries: { limit: 3, delay: "10 seconds", backoff: "exponential" } }, async () => {
 			await Promise.all(
-				canary.map((id) =>
-					this.env.COMMAND_QUEUE.send({ type: "reconfigure", instanceId: id, newPool: params.newPool } as FleetCommand)
-				)
+				canary.map((id) => writeFleetCommand(this.env, { type: "reconfigure", instanceId: id, newPool: params.newPool } as FleetCommand))
 			);
 		});
 
@@ -62,9 +60,7 @@ export class ConfigWorkflow extends WorkflowEntrypoint<Env, PoolMigrationParams>
 			});
 			await step.do("rollback-canary", { retries: { limit: 3, delay: "10 seconds", backoff: "exponential" } }, async () => {
 				await Promise.all(
-					canary.map((id) =>
-						this.env.COMMAND_QUEUE.send({ type: "reconfigure", instanceId: id, newPool: rollbackPool } as FleetCommand)
-					)
+					canary.map((id) => writeFleetCommand(this.env, { type: "reconfigure", instanceId: id, newPool: rollbackPool } as FleetCommand))
 				);
 			});
 			await step.do("emit-rollback", async () => {
@@ -91,9 +87,7 @@ export class ConfigWorkflow extends WorkflowEntrypoint<Env, PoolMigrationParams>
 				{ retries: { limit: 3, delay: "10 seconds", backoff: "exponential" } },
 				async () => {
 					await Promise.all(
-						batch.map((id) =>
-							this.env.COMMAND_QUEUE.send({ type: "reconfigure", instanceId: id, newPool: params.newPool } as FleetCommand)
-						)
+						batch.map((id) => writeFleetCommand(this.env, { type: "reconfigure", instanceId: id, newPool: params.newPool } as FleetCommand))
 					);
 				}
 			);

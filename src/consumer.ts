@@ -1,6 +1,6 @@
 import{ log, writeEvent, writeHeartbeat } from "./metrics";
 import{ getConfig } from "./config";
-import{ upsertInstanceAggregates, recordInstanceRegistry } from "./job-stats";
+import{ upsertInstanceAggregates, recordInstanceRegistry, writeFleetCommand } from "./job-stats";
 import type { HeartbeatMessage, FleetCommand } from "./types";
 
 const DEDUP_WINDOW_MS = 5 * 60 * 1000;
@@ -99,7 +99,7 @@ export async function processHeartbeatBatch(batch: MessageBatch<HeartbeatMessage
 
 	for(const id of deadInstances){
 		try{
-			await env.COMMAND_QUEUE.send({ type: "restart", instanceId: id, reason: "heartbeat_timeout" } as FleetCommand);
+			await writeFleetCommand(env, { type: "restart", instanceId: id, reason: "heartbeat_timeout" } as FleetCommand);
 			writeEvent(env, "consumer", "dead_instance_restart", { instanceId: id }, now);
 		}catch(e){
 			log(env, "error", "failed to enqueue restart for dead instance", { instanceId: id, error: String(e) });
@@ -107,7 +107,7 @@ export async function processHeartbeatBatch(batch: MessageBatch<HeartbeatMessage
 	}
 	for(const cmd of driftInstances){
 		try{
-			await env.COMMAND_QUEUE.send(cmd);
+			await writeFleetCommand(env, cmd);
 			writeEvent(env, "consumer", "config_drift", { instanceId: cmd.instanceId, pool: cmd.newPool }, now);
 		}catch(e){
 			log(env, "error", "failed to enqueue reconfigure", { instanceId: cmd.instanceId, error: String(e) });

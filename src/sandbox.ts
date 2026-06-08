@@ -61,7 +61,7 @@ export class AppNode extends Container<Env> {
 					uptime: body.uptime ?? 0,
 				};
 				try{
-					await env.HEARTBEAT_QUEUE.send(hb);
+					await env.HEARTBEAT_QUEUE?.send(hb);
 				}catch {
 
 				}
@@ -295,7 +295,7 @@ export class AppNode extends Container<Env> {
 			let queued = false;
 			for(let attempt = 0; attempt < 3 && !queued; attempt++){
 				try{
-					await this.env.HEARTBEAT_QUEUE.send(hb);
+					await this.env.HEARTBEAT_QUEUE?.send(hb);
 					queued = true;
 				}catch(queueErr){
 					if(attempt === 2){

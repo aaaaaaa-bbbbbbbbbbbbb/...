@@ -250,5 +250,43 @@ export async function getInstanceFailureRate(env: Env, instanceIds: string[], se
 }
 
 export async function writeFleetCommand(env: Env, cmd: FleetCommand): Promise<void> {
-	await env.COMMAND_QUEUE.send(cmd);
+	if(env.COMMAND_QUEUE){
+		await env.COMMAND_QUEUE.send(cmd);
+		return;
+	}
+	if(cmd.type === "spawn"){
+		const count = cmd.desiredCount || 1;
+		const alive = await getAliveInstanceIds(env);
+		const free: string[] = [];
+		for(let i = 0; i < 370 && free.length < count; i++){
+			const id = `fleet-node-${i}`;
+			if(!alive.has(id)) free.push(id);
+		}
+		for(const id of free){
+			await dispatchCommandDirect(env, id, [{ type: "spawn", desiredCount: 1, regionHint: cmd.regionHint }]);
+		}
+		return;
+	}
+	if(cmd.instanceId){
+		await dispatchCommandDirect(env, cmd.instanceId, [cmd]);
+		return;
+	}
+	if(cmd.type === "destroy"){
+		for(const id of await listActiveInstanceIds(env)){
+			await dispatchCommandDirect(env, id, [{ ...cmd, instanceId: id }]);
+		}
+		return;
+	}
+	throw new Error("command requires COMMAND_QUEUE or instanceId");
+}
+
+async function dispatchCommandDirect(env: Env, instanceId: string, commands: FleetCommand[]): Promise<void> {
+	const doId = env.JOB_CONTAINER.idFromName(instanceId);
+	const stub = env.JOB_CONTAINER.get(doId);
+	const res = await stub.fetch(new Request("http://internal/command", {
+		method: "POST",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify(commands),
+	}));
+	if(!res.ok) throw new Error(`DO returned ${res.status}`);
 }

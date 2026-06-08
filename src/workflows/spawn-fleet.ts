@@ -1,6 +1,6 @@
 import{ WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
 type Sleep = Parameters<WorkflowStep["sleep"]>[1];
-import{ getAliveInstanceCount } from "../job-stats";
+import{ getAliveInstanceCount, writeFleetCommand } from "../job-stats";
 import{ writeEvent, log } from "../metrics";
 import type { SpawnFleetParams, FleetCommand } from "../types";
 
@@ -39,7 +39,7 @@ export class ScaleWorkflow extends WorkflowEntrypoint<Env, SpawnFleetParams> {
 				`spawn-batch-${b}`,
 				{ retries: { limit: 3, delay: "10 seconds", backoff: "exponential" } },
 				async () => {
-					await this.env.COMMAND_QUEUE.send({
+					await writeFleetCommand(this.env, {
 						type: "spawn",
 						desiredCount: thisBatch,
 						regionHint: params.regionHint,

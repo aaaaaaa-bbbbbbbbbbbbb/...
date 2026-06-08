@@ -1,6 +1,6 @@
 import{ WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
 type Sleep = Parameters<WorkflowStep["sleep"]>[1];
-import{ listActiveInstanceIds } from "../job-stats";
+import{ listActiveInstanceIds, writeFleetCommand } from "../job-stats";
 import{ writeEvent } from "../metrics";
 import type { RollingRestartParams, FleetCommand } from "../types";
 
@@ -33,9 +33,7 @@ export class MaintenanceWorkflow extends WorkflowEntrypoint<Env, RollingRestartP
 				{ retries: { limit: 3, delay: "10 seconds", backoff: "exponential" } },
 				async () => {
 					await Promise.all(
-						batch.map((id) =>
-							this.env.COMMAND_QUEUE.send({ type: "restart", instanceId: id, reason } as FleetCommand)
-						)
+						batch.map((id) => writeFleetCommand(this.env, { type: "restart", instanceId: id, reason } as FleetCommand))
 					);
 				}
 			);

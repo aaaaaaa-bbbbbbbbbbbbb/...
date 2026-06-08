@@ -55,54 +55,6 @@
 			]
 		}
 	],
-	"queues": {
-		"producers": [
-			{
-				"binding": "HEARTBEAT_QUEUE",
-				"queue": "app-events"
-			},
-			{
-				"binding": "COMMAND_QUEUE",
-				"queue": "app-commands"
-			},
-			{
-				"binding": "HEARTBEAT_DLQ",
-				"queue": "app-events-dlq"
-			},
-			{
-				"binding": "COMMAND_DLQ",
-				"queue": "app-commands-dlq"
-			}
-		],
-		"consumers": [
-			{
-				"queue": "app-events",
-				"max_batch_size": 50,
-				"max_batch_timeout": 5,
-				"max_retries": 3,
-				"dead_letter_queue": "app-events-dlq"
-			},
-			{
-				"queue": "app-commands",
-				"max_batch_size": 100,
-				"max_batch_timeout": 10,
-				"max_retries": 5,
-				"dead_letter_queue": "app-commands-dlq"
-			},
-			{
-				"queue": "app-events-dlq",
-				"max_batch_size": 10,
-				"max_batch_timeout": 30,
-				"max_retries": 1
-			},
-			{
-				"queue": "app-commands-dlq",
-				"max_batch_size": 10,
-				"max_batch_timeout": 30,
-				"max_retries": 1
-			}
-		]
-	},
 	"kv_namespaces": [
 		{
 			"binding": "KV",

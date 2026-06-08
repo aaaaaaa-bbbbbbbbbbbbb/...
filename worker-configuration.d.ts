@@ -6,10 +6,10 @@ declare namespace Cloudflare {
 		DB: D1Database;
 		KV: KVNamespace;
 
-		HEARTBEAT_QUEUE: Queue<import("./src/types").HeartbeatMessage>;
-		COMMAND_QUEUE: Queue<import("./src/types").FleetCommand>;
-		HEARTBEAT_DLQ: Queue<unknown>;
-		COMMAND_DLQ: Queue<unknown>;
+		HEARTBEAT_QUEUE?: Queue<import("./src/types").HeartbeatMessage>;
+		COMMAND_QUEUE?: Queue<import("./src/types").FleetCommand>;
+		HEARTBEAT_DLQ?: Queue<unknown>;
+		COMMAND_DLQ?: Queue<unknown>;
 
 		HEARTBEATS: AnalyticsEngineDataset;
 		EVENTS: AnalyticsEngineDataset;
