@@ -47,7 +47,7 @@ PoolClient::~PoolClient(){
 void PoolClient::parse_url(const std::string& url, bool tls_default, std::string& host, std::string& port, bool& tls){
 	std::string value = url;
 	tls = tls_default;
-	const auto scheme = value.find(":
+	const auto scheme = value.find("://");
 	if(scheme != std::string::npos){
 		const std::string s = value.substr(0, scheme);
 		tls = (s == "ssl" || s == "tls" || s == "stratum+ssl" || s == "stratum+tls");
