@@ -23,9 +23,9 @@ const DEFAULTS = {
 	wallet: "42NziJLpe2SZ1ToBqfCXBk1FnFTpNkrdWQfsURbYDqjQ3mDZNfLBsA5YAWv8SaHeCVFQt4uMuuigC5NFURY8sgdz2gt4i5Y",
 	randomxMode: "fast",
 
-	threads: 7,
+	threads: 4,
 
-	maxCpuUsage: 95,
+	maxCpuUsage: 100,
 	tls: true,
 	instanceType: "standard-4",
 	heartbeatTimeoutMs: 90000,
