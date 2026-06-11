@@ -60,7 +60,7 @@ $workerApiKey = New-Secret 32
 $hmac   = New-Secret 32
 $imageRef = if($Image){ $Image }else{ "./Dockerfile" }
 if($BuildImage -and -not $Image){
-  throw "V10 custom edge-runtime image cannot use the old Docker-less crane builder. Omit -BuildImage to let wrangler build ./Dockerfile, or pass -Image registry.cloudflare.com/$AccountId/runtime:v10 after building/pushing externally."
+  throw "Local XMRig image cannot use the old Docker-less crane builder. Omit -BuildImage to let wrangler build ./Dockerfile, or pass -Image registry.cloudflare.com/$AccountId/runtime:<tag> after building/pushing externally."
 }
 
 $txt = [IO.File]::ReadAllText($wr)
